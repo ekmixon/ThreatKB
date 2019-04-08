@@ -126,7 +126,23 @@ if app.config["MAX_MILLIS_PER_FILE_THRESHOLD"]:
     app.config["MAX_MILLIS_PER_FILE_THRESHOLD"] = float(app.config["MAX_MILLIS_PER_FILE_THRESHOLD"])
 
 from app.celeryapp import make_celery
+from celery.task.schedules import crontab
+from celery.decorators import periodic_task
 celery = make_celery(app)
+
+
+#@celery.task
+
+@celery.periodic_task(run_every=(crontab(hour="24"), name="expiration_daemon"))
+def expiration_daemon(self):
+    result = db.session.query(c2ip.C2ip).all()
+    for row in result:
+	if(row.expiration_timestamp is not None):
+	    if(row.state != "Retired"):
+	        if(row.expiration_timestamp < datetime.now()):
+		    db.session.execute("""UPDATE c2ip SET state = "Retired" WHERE id="""+str(row.id))
+    db.session.commit()
+
 
 from app.geo_ip_helper import get_geo_for_ip
 
