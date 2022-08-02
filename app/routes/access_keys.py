@@ -26,7 +26,12 @@ def get_all_user_access_keys():
     if not current_user:
         abort(403)
     else:
-        keys = AccessKeys.query.filter(AccessKeys.user_id == current_user.id).filter(AccessKeys.deleted == None).all()
+        keys = (
+            AccessKeys.query.filter(AccessKeys.user_id == current_user.id)
+            .filter(AccessKeys.deleted is None)
+            .all()
+        )
+
 
     return Response(json.dumps([key.to_dict() for key in keys]), mimetype='application/json')
 
@@ -42,11 +47,7 @@ def get_active_inactive_key_count():
     else:
         keys = AccessKeys.query.filter(AccessKeys.user_id == current_user.id).all()
 
-    count = 0
-    for key in keys:
-        if key.status == 'active' or key.status == 'inactive':
-            count += 1
-
+    count = sum(key.status in ['active', 'inactive'] for key in keys)
     return jsonify({'activeInactiveCount': count})
 
 
@@ -58,7 +59,7 @@ def get_access_key(key_id):
     key = AccessKeys.query.get(key_id)
     if not key:
         abort(404)
-    if not key.user_id == current_user.id:
+    if key.user_id != current_user.id:
         abort(403)
     return jsonify(key.to_dict())
 
@@ -103,10 +104,7 @@ def is_token_active(token):
     if not key:
         abort(401)
 
-    if key.status == 'active':
-        return True
-    else:
-        return False
+    return key.status == 'active'
 
 
 @app.route('/ThreatKB/access_keys/<int:key_id>', methods=['PUT'])
@@ -120,7 +118,7 @@ def update_key(key_id):
     key = AccessKeys.query.get(key_id)
     if not key:
         abort(404)
-    if not key.user_id == current_user.id:
+    if key.user_id != current_user.id:
         abort(403)
 
     key = AccessKeys(

@@ -56,9 +56,9 @@ class ThreatKB:
         # ensure base URI is wrapped in slashes or, if not specified, is a slash.
         if self.base_uri:
             if not self.base_uri.startswith("/"):
-                self.base_uri = "/" + self.base_uri
+                self.base_uri = f"/{self.base_uri}"
             if not self.base_uri.endswith("/"):
-                self.base_uri = self.base_uri + "/"
+                self.base_uri = f"{self.base_uri}/"
         else:
             self.base_uri = "/"
         
@@ -66,7 +66,8 @@ class ThreatKB:
                  headers={"Content-Type": "application/json;charset=UTF-8"}):
         uri_params["token"] = self.token
         uri_params["secret_key"] = self.secret_key
-        url = "%s://%s%s%s" % ("https" if self.use_https else "http", self.host, self.base_uri, uri)
+        url = f'{"https" if self.use_https else "http"}://{self.host}{self.base_uri}{uri}'
+
         # Try hitting the uri
         if files:
             response = self.session.request(method, url, params=uri_params, data=body, verify=False, files=files)
@@ -86,17 +87,26 @@ class ThreatKB:
                 return o
                 # return dict(zip(self.filter_on_keys, [o[k] for k in self.filter_on_keys]))
             else:
-                results = []
-                for obj in o:
-                    results.append(dict(zip(self.filter_on_keys, [obj[k] for k in self.filter_on_keys])))
-                return results
-                # return project(o, self.filter_on_keys)
+                return [
+                    dict(
+                        zip(
+                            self.filter_on_keys,
+                            [obj[k] for k in self.filter_on_keys],
+                        )
+                    )
+                    for obj in o
+                ]
+
+                        # return project(o, self.filter_on_keys)
         except Exception:
             return output
 
     def get(self, endpoint, id_=None, params={}):
         """If index is None, list all; else get one"""
-        r = self._request('GET', endpoint + ('/' + str(id_) if id_ else ''), uri_params=params)
+        r = self._request(
+            'GET', endpoint + (f'/{str(id_)}' if id_ else ''), uri_params=params
+        )
+
         return self.filter_output(r.content)
 
     def update(self, endpoint, id_, json_data):
@@ -112,9 +122,7 @@ class ThreatKB:
             r = self._request('POST', endpoint, files=files)
         else:
             r = self._request('POST', endpoint, body=json_data)
-        if r.status_code == 412:
-            return None
-        return r.content
+        return None if r.status_code == 412 else r.content
 
 
 def initialize():
@@ -127,13 +135,17 @@ def initialize():
         API_SECRET_KEY = config.get("default", "secret_key")
         API_HOST = config.get("default", "api_host")
         if not API_HOST.endswith("/"):
-            API_HOST = "%s/" % (API_HOST)
+            API_HOST = f"{API_HOST}/"
     except:
         raise Exception("Error. Run 'python %s configure' first." % (sys.argv[0]))
 
-    THREATKB_CLI = ThreatKB(host=API_HOST, token=API_TOKEN, secret_key=API_SECRET_KEY,
-                            use_https=False if API_HOST.startswith("http://") else True,
-                            filter_on_keys=FILTER_KEYS)
+    THREATKB_CLI = ThreatKB(
+        host=API_HOST,
+        token=API_TOKEN,
+        secret_key=API_SECRET_KEY,
+        use_https=not API_HOST.startswith("http://"),
+        filter_on_keys=FILTER_KEYS,
+    )
 
 
 def configure():
@@ -149,11 +161,18 @@ def configure():
     except:
         pass
 
-    API_KEY = raw_input("Token [%s]: " % ("%s%s" % ("*" * (len(API_KEY) - 3), API_KEY[-3:]) if API_KEY else "*" * 10))
+    API_KEY = raw_input(
+        f"""Token [{f'{"*" * (len(API_KEY) - 3)}{API_KEY[-3:]}' if API_KEY else "*" * 10}]: """
+    )
+
     SECRET_KEY = raw_input(
-        "Secret Key [%s]: " % ("%s%s" % ("*" * (len(SECRET_KEY) - 3), SECRET_KEY[-3:]) if SECRET_KEY else "*" * 10))
+        f"""Secret Key [{f'{"*" * (len(SECRET_KEY) - 3)}{SECRET_KEY[-3:]}' if SECRET_KEY else "*" * 10}]: """
+    )
+
     API_HOST = raw_input(
-        "API Host [%s]: " % ("%s%s" % ("*" * (len(API_HOST) - 3), API_HOST[-3:]) if API_HOST else "*" * 10))
+        f"""API Host [{f'{"*" * (len(API_HOST) - 3)}{API_HOST[-3:]}' if API_HOST else "*" * 10}]: """
+    )
+
 
     config = ConfigParser()
     config.readfp(StringIO('[default]'))

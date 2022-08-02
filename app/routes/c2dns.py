@@ -36,9 +36,6 @@ def get_all_c2dns():
     if view == "All":
         include_inactive = True
         include_active = True
-    elif view == "Active Only":
-        include_inactive = False
-        include_active = True
     elif view == "Inactive Only":
         include_inactive = True
         include_active = False
@@ -88,7 +85,10 @@ def get_c2dns(id):
         abort(403)
 
     return_dict = entity.to_dict()
-    return_dict["bookmarked"] = True if is_bookmarked(ENTITY_MAPPING["DNS"], id, current_user.id) else False
+    return_dict["bookmarked"] = bool(
+        is_bookmarked(ENTITY_MAPPING["DNS"], id, current_user.id)
+    )
+
 
     return jsonify(return_dict)
 
@@ -230,15 +230,11 @@ def delete_c2dns(id):
             abort(403)
 
         db.session.merge(entity)
-        db.session.commit()
-        delete_tags_mapping(entity.__tablename__, entity.id)
-        delete_bookmarks(ENTITY_MAPPING["DNS"], id, current_user.id)
     else:
         db.session.delete(entity)
-        db.session.commit()
-        delete_tags_mapping(entity.__tablename__, entity.id)
-        delete_bookmarks(ENTITY_MAPPING["DNS"], id, current_user.id)
-
+    db.session.commit()
+    delete_tags_mapping(entity.__tablename__, entity.id)
+    delete_bookmarks(ENTITY_MAPPING["DNS"], id, current_user.id)
     return jsonify(''), 204
 
 

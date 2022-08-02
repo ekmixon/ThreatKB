@@ -62,17 +62,18 @@ def update_tags(id):
     if not entity:
         abort(404)
 
-    entity1 = tags.Tags.query.filter(tags.Tags.text == request.json['text']).first()
-    if not entity1:
+    if entity1 := tags.Tags.query.filter(
+        tags.Tags.text == request.json['text']
+    ).first():
+        entity = entity1
+
+    else:
         entity = tags.Tags(
             text=request.json['text'],
             id=id
         )
         db.session.merge(entity)
         db.session.commit()
-    else:
-        entity = entity1
-
     return jsonify(entity.to_dict()), 200
 
 
@@ -95,8 +96,7 @@ def delete_tags(id):
 
 
 def delete_tags_mapping_for_tag_id(t_id):
-    entities_to_delete = Tags_mapping.query.filter_by(tag_id=t_id).all()
-    if entities_to_delete:
+    if entities_to_delete := Tags_mapping.query.filter_by(tag_id=t_id).all():
         for entity in entities_to_delete:
             db.session.delete(entity)
             db.session.commit()

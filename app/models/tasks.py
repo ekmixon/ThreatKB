@@ -75,8 +75,9 @@ def task_modified(mapper, connection, target):
     session = Session.object_session(target)
 
     if session.is_modified(target, include_collections=False):
-        state_activity_text = activity_log.get_state_change(target, target.title)
-        if state_activity_text:
+        if state_activity_text := activity_log.get_state_change(
+            target, target.title
+        ):
             activity_log.log_activity(connection=connection,
                                       activity_type=ACTIVITY_TYPE.keys()[ACTIVITY_TYPE.keys().index("STATE_TOGGLED")],
                                       activity_text=state_activity_text,

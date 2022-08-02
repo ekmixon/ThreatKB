@@ -17,9 +17,6 @@ def get_all_macros():
     if view == "All":
         include_inactive = True
         include_active = True
-    elif view == "Active Only":
-        include_inactive = False
-        include_active = True
     elif view == "Inactive Only":
         include_inactive = True
         include_active = False
@@ -122,12 +119,10 @@ def delete_macro(tag):
             abort(404)
 
         db.session.merge(entity)
-        db.session.commit()
+    elif entity.is_associated_with_sig():
+        return abort(409)
+
     else:
-        if entity.is_associated_with_sig():
-            return abort(409)
-
         db.session.delete(entity)
-        db.session.commit()
-
+    db.session.commit()
     return jsonify(''), 204

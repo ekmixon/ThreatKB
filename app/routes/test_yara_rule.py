@@ -56,7 +56,7 @@ def get_all_tests():
             continue
 
         s_value = str(value)
-        l_value = "%" + s_value[1:] + "%" if s_value.startswith("!") else "%" + s_value + "%"
+        l_value = f"%{s_value[1:]}%" if s_value.startswith("!") else f"%{s_value}%"
 
         if column == "yara_rule_name":
             entities = entities.join(Yara_rule, entity.yara_rule_id == Yara_rule.id) \
@@ -77,7 +77,7 @@ def get_all_tests():
     total_count = entities.count()
 
     if sort_by:
-        filtered_entities = filtered_entities.order_by("%s %s" % (sort_by, sort_direction))
+        filtered_entities = filtered_entities.order_by(f"{sort_by} {sort_direction}")
     else:
         filtered_entities = filtered_entities.order_by("start_time DESC")
 
@@ -89,8 +89,7 @@ def get_all_tests():
 
     filtered_entities = filtered_entities.all()
 
-    response_dict = dict()
-    response_dict['data'] = [entity.to_dict() for entity in filtered_entities]
+    response_dict = {'data': [entity.to_dict() for entity in filtered_entities]}
     response_dict['total_count'] = total_count
 
     return json.dumps(response_dict)
@@ -109,21 +108,22 @@ def test_yara_rule_rest(rule_id):
     try:
         files_to_test = []
         is_neg_test = str(request.args.get("negative", "0"))
-        is_neg_test = True if is_neg_test == "1" else False
+        is_neg_test = is_neg_test == "1"
         if not is_neg_test:
             for f in yara_rule_entity.files:
-                file_store_path = Cfg_settings.get_setting("FILE_STORE_PATH")
-                if not file_store_path:
+                if file_store_path := Cfg_settings.get_setting(
+                    "FILE_STORE_PATH"
+                ):
+                    files_to_test.append(os.path.join(file_store_path,
+                                                      str(f.entity_type) if f.entity_type is not None else "",
+                                                      str(f.entity_id) if f.entity_id is not None else "",
+                                                      str(f.filename)))
+                else:
                     raise Exception('FILE_STORE_PATH configuration setting not set.')
-                files_to_test.append(os.path.join(file_store_path,
-                                                  str(f.entity_type) if f.entity_type is not None else "",
-                                                  str(f.entity_id) if f.entity_id is not None else "",
-                                                  str(f.filename)))
         if not is_neg_test:
             return jsonify(test_yara_rule(yara_rule_entity, files_to_test, current_user.id, False, is_neg_test)), 200
-        else:
-            test_yara_rule_task.delay(yara_rule_entity.id, current_user.id, is_neg_test)
-            return jsonify({"status": "ok", "message": "Background job created"}), 200
+        test_yara_rule_task.delay(yara_rule_entity.id, current_user.id, is_neg_test)
+        return jsonify({"status": "ok", "message": "Background job created"}), 200
     except Exception as e:
         return e.message, 500
 
@@ -144,16 +144,14 @@ def test_yara_rule_task(rule_id, user, is_neg_test):
     if not yara_rule_entity:
         abort(500)
 
-    print("yara rule entity %s" % (yara_rule_entity))
+    print(f"yara rule entity {yara_rule_entity}")
     neg_test_dir = Cfg_settings.get_setting("NEGATIVE_TESTING_FILE_DIRECTORY")
     if not os.path.exists(neg_test_dir):
         abort(500)
 
     for root_path, dirs, dir_files in os.walk(neg_test_dir):
-        for f_name in dir_files:
-            files_to_test.append(os.path.join(root_path, f_name))
-
-    print("files to test %s" % (str(files_to_test)))
+        files_to_test.extend(os.path.join(root_path, f_name) for f_name in dir_files)
+    print(f"files to test {files_to_test}")
     return test_yara_rule(yara_rule_entity, files_to_test, user, True, is_neg_test)
 
 
@@ -203,7 +201,7 @@ def test_yara_rule(yara_rule_entity, files_to_test, user, is_async=False, is_neg
 
         if not os.path.exists(file_path):
             errors_encountered += 1
-            error_msgs.append(ntpath.basename(file_path) + " not in File Store Path.")
+            error_msgs.append(f"{ntpath.basename(file_path)} not in File Store Path.")
             continue
 
         if not is_async:
@@ -218,7 +216,12 @@ def test_yara_rule(yara_rule_entity, files_to_test, user, is_async=False, is_neg
                 perform_rule_match(rule, file_path, manager_dict, yara_command, yara_test_regex)
             manager_dicts.append(manager_dict)
         else:
-            manager_dicts.append(perform_rule_match(rule, file_path, dict(), yara_command, yara_test_regex))
+            manager_dicts.append(
+                perform_rule_match(
+                    rule, file_path, {}, yara_command, yara_test_regex
+                )
+            )
+
 
     if old_avg and not is_async:
         time.sleep((old_avg * threshold) / 1000.0)
@@ -269,7 +272,7 @@ def test_yara_rule(yara_rule_entity, files_to_test, user, is_async=False, is_neg
 
 def does_rule_compile(yara_dict):
     rule = Yara_rule.to_yara_rule_string(yara_dict, include_imports=True)
-    rule_temp_path = "/tmp/%s.yar" % (str(uuid.uuid4()).replace("-", "")[0:8])
+    rule_temp_path = f'/tmp/{str(uuid.uuid4()).replace("-", "")[:8]}.yar'
     with open(rule_temp_path, "w") as f:
         f.write(rule)
 
@@ -284,8 +287,6 @@ def does_rule_compile(yara_dict):
 
 
 def get_yara_rule(yara_rule_entity):
-    rule_string = yara_rule_entity.to_dict(include_yara_rule_string=True, include_relationships=False)[
-        "yara_rule_string"]
     # rule_string = """
     # rule %s
     # {
@@ -298,12 +299,14 @@ def get_yara_rule(yara_rule_entity):
     #        yara_rule_entity.strings,
     #        yara_rule_entity.condition)
 
-    return rule_string
+    return yara_rule_entity.to_dict(
+        include_yara_rule_string=True, include_relationships=False
+    )["yara_rule_string"]
 
 
 def perform_rule_match(rule, file_path, manager_dict, yara_command, yara_test_regex):
     start = time.time()
-    rule_temp_path = "/tmp/%s.yar" % (str(uuid.uuid4()).replace("-", ""))
+    rule_temp_path = f'/tmp/{str(uuid.uuid4()).replace("-", "")}.yar'
     with open(rule_temp_path, "w") as f:
         f.write(rule)
 
@@ -319,20 +322,13 @@ def perform_rule_match(rule, file_path, manager_dict, yara_command, yara_test_re
     manager_dict['command'] = yara_command
     manager_dict['command_match_test_regex'] = yara_test_regex
 
-    if re.search(yara_test_regex, stdout):
-        manager_dict['match'] = True
-    else:
-        manager_dict['match'] = False
+    manager_dict['match'] = bool(re.search(yara_test_regex, stdout))
     return manager_dict
 
 
 def get_all_sig_ids():
-    sig_ids = []
     yara_rules = yara_rule.Yara_rule.query.all()
-    for rule in yara_rules:
-        sig_ids.append(rule.id)
-
-    return sig_ids
+    return [rule.id for rule in yara_rules]
 
 
 if __name__ == "__main__":

@@ -23,7 +23,7 @@ def main():
     c2ips = db.session.query(C2ip)
 
     if not args.force:
-        c2ips = c2ips.filter(or_(C2ip.asn == None, C2ip.country == None))
+        c2ips = c2ips.filter(or_(C2ip.asn is None, C2ip.country is None))
 
     c2ips = c2ips.all()
 
@@ -41,7 +41,10 @@ def main():
 
     response = ""
     while response not in ("Y", "N"):
-        response = raw_input("Changes to be made above. There are %s total. Proceed? (Y/N) " % (len(fixed_ips)))
+        response = raw_input(
+            f"Changes to be made above. There are {len(fixed_ips)} total. Proceed? (Y/N) "
+        )
+
 
     not_fully_fixed = []
     if response == "Y":
@@ -52,7 +55,7 @@ def main():
             db.session.add(c2ips[i])
         db.session.commit()
 
-        if len(not_fully_fixed) > 0:
+        if not_fully_fixed:
             print("We did not find or set ASN or country for the following because it couldn't be looked up")
             for ip in not_fully_fixed:
                 print("IP: %s\tASN: %s\tCountry: %s" % (ip.ip, ip.asn, ip.country))

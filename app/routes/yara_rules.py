@@ -82,9 +82,6 @@ def get_all_yara_rules():
     if view == "All":
         include_inactive = True
         include_active = True
-    elif view == "Active Only":
-        include_inactive = False
-        include_active = True
     elif view == "Inactive Only":
         include_inactive = True
         include_active = False
@@ -152,8 +149,10 @@ def get_yara_rule(id):
         abort(403)
 
     return_dict = entity.to_dict(include_yara_string, short)
-    return_dict["bookmarked"] = True if is_bookmarked(ENTITY_MAPPING["SIGNATURE"], id, current_user.id) \
-        else False
+    return_dict["bookmarked"] = bool(
+        is_bookmarked(ENTITY_MAPPING["SIGNATURE"], id, current_user.id)
+    )
+
 
     return jsonify(return_dict)
 

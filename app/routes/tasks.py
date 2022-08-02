@@ -64,12 +64,19 @@ def get_tasks(id):
     show_for_non_admin = cfg_settings.Cfg_settings.get_setting("ENABLE_NON_ADMIN_TASK_VISIBILITY")
     show_for_non_admin = bool(distutils.util.strtobool(show_for_non_admin)) if show_for_non_admin else False
 
-    if not show_for_non_admin and \
-            not (current_user.admin or entity.owner_user_id == current_user.id or entity.owner_user_id is None):
+    if (
+        not show_for_non_admin
+        and not current_user.admin
+        and entity.owner_user_id != current_user.id
+        and entity.owner_user_id is not None
+    ):
         return jsonify({})
 
     return_dict = entity.to_dict()
-    return_dict["bookmarked"] = True if is_bookmarked(ENTITY_MAPPING["TASK"], id, current_user.id) else False
+    return_dict["bookmarked"] = bool(
+        is_bookmarked(ENTITY_MAPPING["TASK"], id, current_user.id)
+    )
+
 
     return jsonify(return_dict)
 

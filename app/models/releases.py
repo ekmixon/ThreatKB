@@ -69,7 +69,7 @@ class Release(db.Model):
                                                                  self.release_data_dict["DNS"].get("DNS", None) else 0
         )
         if not short:
-            r.update(dict(release_data=self.release_data))
+            r |= dict(release_data=self.release_data)
         return r
 
     def get_release_data(self):

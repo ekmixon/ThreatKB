@@ -57,10 +57,10 @@ def admin_only():
     def wrapper(f):
         @functools.wraps(f)
         def wrapped(*args, **kwargs):
-            if not current_user.admin:
-                return abort(403)
-            return f(*args, **kwargs)
+            return f(*args, **kwargs) if current_user.admin else abort(403)
+
         return wrapped
+
     return wrapper
 
 
@@ -87,7 +87,7 @@ def set_celery_stuff(flask_app):
 
 set_celery_stuff(app)
 
-print("app config: %s" % (str(app.config)))
+print(f"app config: {str(app.config)}")
 
 from app.celeryapp import make_celery
 
@@ -151,8 +151,7 @@ from app.geo_ip_helper import get_geo_for_ip
 # DB functions below used by unit tests.
 def connect_db():
     """Connects to the specific database."""
-    rv = SQLAlchemy(app)
-    return rv
+    return SQLAlchemy(app)
 
 
 def get_db():
@@ -212,10 +211,8 @@ def load_user_from_request(request):
     token = request.args.get('token')
     s_key = str(request.args.get('secret_key'))
     if token and s_key:
-        valid_token = is_token_active(token)
-        if valid_token:
-            user = users.KBUser.verify_auth_token(str(token), s_key)
-            if user:
+        if valid_token := is_token_active(token):
+            if user := users.KBUser.verify_auth_token(str(token), s_key):
                 return user
             else:
                 abort(401)

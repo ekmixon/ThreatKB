@@ -22,7 +22,7 @@ class Cfg_settings(db.Model):
         )
 
     def __repr__(self):
-        return '<Cfg_settings %s>' % (self.key)
+        return f'<Cfg_settings {self.key}>'
 
     @staticmethod
     def get_private_setting(key):

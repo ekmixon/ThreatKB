@@ -33,7 +33,7 @@ class Macros(db.Model):
         )
 
     def __repr__(self):
-        return '<Marcos %s>' % self.tag
+        return f'<Marcos {self.tag}>'
 
     def is_associated_with_sig(self):
         from app.models import yara_rule, cfg_settings
@@ -42,11 +42,11 @@ class Macros(db.Model):
         l_value = "%" + (tag_template % self.tag) + "%"
 
         sig_count = db.session.query(yara_rule.Yara_rule) \
-            .filter(or_(yara_rule.Yara_rule.strings.like(l_value),
+                .filter(or_(yara_rule.Yara_rule.strings.like(l_value),
                         yara_rule.Yara_rule.condition.like(l_value))) \
-            .count()
+                .count()
 
-        return True if sig_count > 0 else False
+        return sig_count > 0
 
     @staticmethod
     def get_value(tag):

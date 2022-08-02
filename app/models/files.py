@@ -26,14 +26,17 @@ class Files(db.Model):
             date_modified=self.date_modified.isoformat(),
             filename=self.filename,
             content_type=self.content_type,
-            entity_type=ENTITY_MAPPING.keys()[ENTITY_MAPPING.values().index(self.entity_type)]
-            if self.entity_type else None,
-            entity_id=self.entity_id if self.entity_id else None,
+            entity_type=ENTITY_MAPPING.keys()[
+                ENTITY_MAPPING.values().index(self.entity_type)
+            ]
+            if self.entity_type
+            else None,
+            entity_id=self.entity_id or None,
             id=self.id,
             user=self.user.to_dict(),
             sha1=self.sha1,
             md5=self.md5,
-            sha256=self.sha256
+            sha256=self.sha256,
         )
 
     def __repr__(self):

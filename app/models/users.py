@@ -53,10 +53,7 @@ class KBUser(db.Model):
 
     @staticmethod
     def get_user_cache():
-        users = {}
-        for user in db.session.query(KBUser).all():
-            users[user.id] = user.to_dict()
-        return users
+        return {user.id: user.to_dict() for user in db.session.query(KBUser).all()}
 
     @staticmethod
     def verify_auth_token(token, s_key):
@@ -65,5 +62,4 @@ class KBUser(db.Model):
             data = s.loads(token)
         except BadSignature:
             return None  # invalid token
-        user = KBUser.query.get(data['id'])
-        return user
+        return KBUser.query.get(data['id'])

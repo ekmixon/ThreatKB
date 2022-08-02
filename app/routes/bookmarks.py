@@ -91,10 +91,9 @@ def delete_bookmark():
 
 
 def delete_bookmarks(entity_type, entity_id, user_id):
-    bookmark = Bookmarks.query.filter_by(entity_type=entity_type,
-                                         entity_id=entity_id,
-                                         user_id=user_id).first()
-    if bookmark:
+    if bookmark := Bookmarks.query.filter_by(
+        entity_type=entity_type, entity_id=entity_id, user_id=user_id
+    ).first():
         db.session.delete(bookmark)
         db.session.commit()
 
@@ -112,4 +111,4 @@ def is_bookmarked(entity_type, entity_id, user_id):
     bookmark = Bookmarks.query.filter_by(entity_type=entity_type,
                                          entity_id=entity_id,
                                          user_id=user_id).first()
-    return True if bookmark else False
+    return bool(bookmark)

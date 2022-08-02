@@ -210,9 +210,11 @@ def get_file_for_entity(entity_type, entity_id, file_id):
     if not os.path.exists(full_path):
         abort(404)
 
-    return send_file(full_path,
-                     attachment_filename="{}".format(file_entity.filename),
-                     as_attachment=True)
+    return send_file(
+        full_path,
+        attachment_filename=f"{file_entity.filename}",
+        as_attachment=True,
+    )
 
 
 @app.route('/ThreatKB/files/<int:file_id>', methods=['DELETE'])
@@ -226,10 +228,13 @@ def delete_file(file_id):
     if not entity:
         abort(404)
 
-    full_path = os.path.join(app.config['FILE_STORE_PATH'],
-                             ENTITY_MAPPING[entity.entity_type] if entity.entity_type else "",
-                             entity.entity_id if entity.entity_id else "",
-                             secure_filename(entity.filename))
+    full_path = os.path.join(
+        app.config['FILE_STORE_PATH'],
+        ENTITY_MAPPING[entity.entity_type] if entity.entity_type else "",
+        entity.entity_id or "",
+        secure_filename(entity.filename),
+    )
+
     if os.path.exists(full_path):
         os.remove(full_path)
 

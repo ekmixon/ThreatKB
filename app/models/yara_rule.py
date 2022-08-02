@@ -77,9 +77,7 @@ class Yara_rule(db.Model):
 
     @property
     def mitre_tactics(self):
-        if self._mitre_tactics:
-            return self._mitre_tactics.split(",")
-        return []
+        return self._mitre_tactics.split(",") if self._mitre_tactics else []
 
     @mitre_techniques.setter
     def mitre_techniques(self, value):

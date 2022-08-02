@@ -53,12 +53,14 @@ def get_releases_latest():
         releases.Release.is_test_release == 0).order_by(
         releases.Release.id.desc()).limit(count)
 
-    if not entities:
-        entities = []
-    elif current_user.admin:
-        entities = [entity.to_small_dict() if short else entity.to_dict() for entity in entities]
-    else:
-        entities = [entity.to_small_dict() if short else entity.to_dict() for entity in entities]
+    entities = (
+        [
+            entity.to_small_dict() if short else entity.to_dict()
+            for entity in entities
+        ]
+        if entities
+        else []
+    )
 
     if len(entities) == 1:
         entities = entities[0]
@@ -79,10 +81,10 @@ def generate_release_notes(release_id):
     if not entity:
         abort(404)
 
-    filename = str(release_id) + "_release_notes.txt"
+    filename = f"{str(release_id)}_release_notes.txt"
     content = entity.generate_release_notes()
     content.seek(0)
-    tfile = "%s/%s" % (tempfile.gettempdir(), str(uuid.uuid4()).replace("-", ""))
+    tfile = f'{tempfile.gettempdir()}/{str(uuid.uuid4()).replace("-", "")}'
     with open(tfile, "w") as t:
         t.write(content.read())
     return send_file(tfile, attachment_filename=filename, mimetype="text/plain", as_attachment=True)
@@ -101,11 +103,11 @@ def generate_artifact_export(release_id):
     if not entity:
         abort(404)
 
-    filename = str(release_id) + "_release.zip"
+    filename = f"{str(release_id)}_release.zip"
     content = entity.generate_artifact_export()
     content.seek(0)
 
-    tfile = "%s/%s" % (tempfile.gettempdir(), str(uuid.uuid4()).replace("-", ""))
+    tfile = f'{tempfile.gettempdir()}/{str(uuid.uuid4()).replace("-", "")}'
     with open(tfile, "w") as t:
         t.write(content.read())
     return send_file(tfile, attachment_filename=filename, as_attachment=True)

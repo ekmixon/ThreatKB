@@ -46,10 +46,17 @@ def create_cfg_states():
     """
     entity = cfg_states.Cfg_states(
         state=request.json['state'],
-        is_release_state=0 if not request.json.get("is_release_state", None) else 1,
-        is_staging_state=0 if not request.json.get("is_staging_state", None) else 1,
-        is_retired_state=0 if not request.json.get("is_retired_state", None) else 1
+        is_release_state=1
+        if request.json.get("is_release_state", None)
+        else 0,
+        is_staging_state=1
+        if request.json.get("is_staging_state", None)
+        else 0,
+        is_retired_state=1
+        if request.json.get("is_retired_state", None)
+        else 0,
     )
+
 
     if (entity.is_staging_state + entity.is_retired_state + entity.is_release_state) > 1:
         raise Exception("You cannot have a single state as draft, release, or retired state.")
@@ -86,10 +93,17 @@ def update_cfg_states(id):
     entity = cfg_states.Cfg_states(
         state=request.json['state'],
         id=id,
-        is_release_state=0 if not request.json.get("is_release_state", None) else 1,
-        is_staging_state=0 if not request.json.get("is_staging_state", None) else 1,
-        is_retired_state=0 if not request.json.get("is_retired_state", None) else 1
+        is_release_state=1
+        if request.json.get("is_release_state", None)
+        else 0,
+        is_staging_state=1
+        if request.json.get("is_staging_state", None)
+        else 0,
+        is_retired_state=1
+        if request.json.get("is_retired_state", None)
+        else 0,
     )
+
 
     if (entity.is_staging_state + entity.is_retired_state + entity.is_release_state) > 1:
         raise Exception("You cannot have a single state as draft, release, or retired state.")

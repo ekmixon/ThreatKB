@@ -49,20 +49,25 @@ class Metadata(db.Model):
     def get_metadata_cache():
         ENTITY_CACHE = {"IP": {}, "DNS": {}, "SIGNATURE": {}}
         metadatas = db.session.query(MetadataMapping, Metadata) \
-            .join(Metadata, Metadata.id == MetadataMapping.metadata_id) \
-            .filter(Metadata.active > 0) \
-            .all()
+                .join(Metadata, Metadata.id == MetadataMapping.metadata_id) \
+                .filter(Metadata.active > 0) \
+                .all()
 
         for metadata_mapping, metadata in metadatas:
             if metadata.artifact_type == ENTITY_MAPPING["IP"]:
                 if not ENTITY_CACHE["IP"].get(metadata_mapping.artifact_id, {}):
                     ENTITY_CACHE["IP"][metadata_mapping.artifact_id] = {"metadata": {}, "metadata_values": {}}
 
-                ENTITY_CACHE["IP"][metadata_mapping.artifact_id]["metadata_values"][metadata.key] = {}
-                ENTITY_CACHE["IP"][metadata_mapping.artifact_id]["metadata_values"][metadata.key][
-                    "value"] = metadata_mapping.value
+                ENTITY_CACHE["IP"][metadata_mapping.artifact_id][
+                    "metadata_values"
+                ][metadata.key] = {"value": metadata_mapping.value}
 
-                if not metadata.type_ in ENTITY_CACHE["IP"][metadata_mapping.artifact_id]["metadata"]:
+                if (
+                    metadata.type_
+                    not in ENTITY_CACHE["IP"][metadata_mapping.artifact_id][
+                        "metadata"
+                    ]
+                ):
                     ENTITY_CACHE["IP"][metadata_mapping.artifact_id]["metadata"][metadata.type_] = []
                 ENTITY_CACHE["IP"][metadata_mapping.artifact_id]["metadata"][metadata.type_].append(
                     metadata.to_dict(include_choices=False))
@@ -71,11 +76,16 @@ class Metadata(db.Model):
                 if not ENTITY_CACHE["DNS"].get(metadata_mapping.artifact_id, {}):
                     ENTITY_CACHE["DNS"][metadata_mapping.artifact_id] = {"metadata": {}, "metadata_values": {}}
 
-                ENTITY_CACHE["DNS"][metadata_mapping.artifact_id]["metadata_values"][metadata.key] = {}
-                ENTITY_CACHE["DNS"][metadata_mapping.artifact_id]["metadata_values"][metadata.key][
-                    "value"] = metadata_mapping.value
+                ENTITY_CACHE["DNS"][metadata_mapping.artifact_id][
+                    "metadata_values"
+                ][metadata.key] = {"value": metadata_mapping.value}
 
-                if not metadata.type_ in ENTITY_CACHE["DNS"][metadata_mapping.artifact_id]["metadata"]:
+                if (
+                    metadata.type_
+                    not in ENTITY_CACHE["DNS"][metadata_mapping.artifact_id][
+                        "metadata"
+                    ]
+                ):
                     ENTITY_CACHE["DNS"][metadata_mapping.artifact_id]["metadata"][metadata.type_] = []
                 ENTITY_CACHE["DNS"][metadata_mapping.artifact_id]["metadata"][metadata.type_].append(
                     metadata.to_dict(include_choices=False))
@@ -84,11 +94,16 @@ class Metadata(db.Model):
                 if not ENTITY_CACHE["SIGNATURE"].get(metadata_mapping.artifact_id, {}):
                     ENTITY_CACHE["SIGNATURE"][metadata_mapping.artifact_id] = {"metadata": {}, "metadata_values": {}}
 
-                ENTITY_CACHE["SIGNATURE"][metadata_mapping.artifact_id]["metadata_values"][metadata.key] = {}
-                ENTITY_CACHE["SIGNATURE"][metadata_mapping.artifact_id]["metadata_values"][metadata.key][
-                    "value"] = metadata_mapping.value
+                ENTITY_CACHE["SIGNATURE"][metadata_mapping.artifact_id][
+                    "metadata_values"
+                ][metadata.key] = {"value": metadata_mapping.value}
 
-                if not metadata.type_ in ENTITY_CACHE["SIGNATURE"][metadata_mapping.artifact_id]["metadata"]:
+                if (
+                    metadata.type_
+                    not in ENTITY_CACHE["SIGNATURE"][metadata_mapping.artifact_id][
+                        "metadata"
+                    ]
+                ):
                     ENTITY_CACHE["SIGNATURE"][metadata_mapping.artifact_id]["metadata"][metadata.type_] = []
                 ENTITY_CACHE["SIGNATURE"][metadata_mapping.artifact_id]["metadata"][metadata.type_].append(
                     metadata.to_dict(include_choices=False))

@@ -18,6 +18,6 @@ class AccessKeys(db.Model):
             user=self.user.to_dict(),
             token=self.token.decode('ascii'),
             created=self.created.isoformat(),
-            deleted=None if not self.deleted else self.deleted.isoformat(),
-            status=self.status
+            deleted=self.deleted.isoformat() if self.deleted else None,
+            status=self.status,
         )

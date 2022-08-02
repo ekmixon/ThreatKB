@@ -28,7 +28,7 @@ sys.dont_write_bytecode
 
 def extract_ips_text(text):
     regex = cfg_settings.Cfg_settings.get_setting(key="IMPORT_IP_REGEX")
-    ip_regex = regex if regex else '(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}(?:\/\d{1,3})?)'
+    ip_regex = regex or '(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}(?:\/\d{1,3})?)'
     return re.compile(ip_regex).findall(text.replace("[.]", "."))
 
 
@@ -37,7 +37,11 @@ def extract_ips_text(text):
 def extract_dns_text(text):
     hostnames = []
     regex = cfg_settings.Cfg_settings.get_setting(key="IMPORT_DNS_REGEX")
-    url_regex = regex if regex else 'http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\(\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+'
+    url_regex = (
+        regex
+        or 'http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\(\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+'
+    )
+
     for dns in re.compile(url_regex).findall(text.replace("[.]", ".")):
         try:
             hostnames.append(dns)
@@ -51,9 +55,17 @@ def extract_dns_text(text):
 def extract_yara_rules_text(text):
     imports = Yara_rule.get_imports_from_string(text)
     split_regex = cfg_settings.Cfg_settings.get_setting(key="IMPORT_SIG_SPLIT_REGEX")
-    split_regex = split_regex if split_regex else "\n[\t\s]*\}[\s\t]*(rule[\t\s][^\r\n]+(?:\{|[\r\n][\r\n\s\t]*\{))"
+    split_regex = (
+        split_regex
+        or "\n[\t\s]*\}[\s\t]*(rule[\t\s][^\r\n]+(?:\{|[\r\n][\r\n\s\t]*\{))"
+    )
+
     parse_regex = cfg_settings.Cfg_settings.get_setting(key="IMPORT_SIG_PARSE_REGEX")
-    parse_regex = parse_regex if parse_regex else r"^[\t\s]*rule[\t\s][^\r\n]+(?:\{|[\r\n][\r\n\s\t]*\{).*?condition:.*?\r?\n?[\t\s]*\}[\s\t]*(?:$|\r?\n)"
+    parse_regex = (
+        parse_regex
+        or r"^[\t\s]*rule[\t\s][^\r\n]+(?:\{|[\r\n][\r\n\s\t]*\{).*?condition:.*?\r?\n?[\t\s]*\}[\s\t]*(?:$|\r?\n)"
+    )
+
 
     yara_rules = re.sub(split_regex, "\n}\n\\1", text, re.MULTILINE | re.DOTALL)
     yara_rules = re.compile(parse_regex, re.MULTILINE | re.DOTALL).findall(yara_rules)

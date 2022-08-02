@@ -50,13 +50,21 @@ class Scripts(db.Model):
 
         try:
             if self.match_regex:
-                results["stdout"] = re.sub("(" + self.match_regex + ")", "<mark>\\1</mark>", results["stdout"])
+                results["stdout"] = re.sub(
+                    f"({self.match_regex})", "<mark>\\1</mark>", results["stdout"]
+                )
+
         except:
             pass
 
         try:
             if highlight_lines_matching:
-                results["stdout"] = re.sub("(" + highlight_lines_matching + ")", "<mark>\\1</mark>", results["stdout"])
+                results["stdout"] = re.sub(
+                    f"({highlight_lines_matching})",
+                    "<mark>\\1</mark>",
+                    results["stdout"],
+                )
+
         except:
             pass
 

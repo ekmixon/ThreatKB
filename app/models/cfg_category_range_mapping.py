@@ -22,8 +22,8 @@ class CfgCategoryRangeMapping(db.Model):
                                                                      yara_rule.Yara_rule.eventid <= self.range_max).count()
         else:
             sig_count = db.session.query(yara_rule.Yara_rule) \
-                .filter(yara_rule.Yara_rule.eventid >= self.range_min, yara_rule.Yara_rule.eventid <= self.range_max) \
-                .filter(yara_rule.Yara_rule.active > 0).count()
+                    .filter(yara_rule.Yara_rule.eventid >= self.range_min, yara_rule.Yara_rule.eventid <= self.range_max) \
+                    .filter(yara_rule.Yara_rule.active > 0).count()
 
         return dict(
             id=self.id,
@@ -37,15 +37,15 @@ class CfgCategoryRangeMapping(db.Model):
 
     @staticmethod
     def get_next_category_eventid(category=None):
-        default_category_min = 10000
-        default_category_max = 20000
-
         if not category or not CfgCategoryRangeMapping.query.filter(
                 CfgCategoryRangeMapping.category == category).first():
             category = CfgCategoryRangeMapping.query.filter(
                 CfgCategoryRangeMapping.category == CfgCategoryRangeMapping.DEFAULT_CATEGORY).first()
             if not category:
                 if not CfgCategoryRangeMapping.COMMITTED_DEFAULT:
+                    default_category_min = 10000
+                    default_category_max = 20000
+
                     category = CfgCategoryRangeMapping(category=CfgCategoryRangeMapping.DEFAULT_CATEGORY,
                                                        range_max=default_category_max,
                                                        range_min=default_category_min, current=default_category_min)
@@ -57,14 +57,14 @@ class CfgCategoryRangeMapping(db.Model):
             ## Make sure its not already taken by an imported signature
             while yara_rule.Yara_rule.query.filter_by(eventid=eventid).first():
                 eventid = eventid + 1
-            category.current = eventid
         else:
             category = CfgCategoryRangeMapping.query.filter(CfgCategoryRangeMapping.category == category).first()
             eventid = category.current + 1
-            category.current = eventid
-
+        category.current = eventid
         db.session.execute(
-            "update `cfg_category_range_mapping` set current=%s where id=%s" % (category.current, category.id))
+            f"update `cfg_category_range_mapping` set current={category.current} where id={category.id}"
+        )
+
         return eventid
 
 

@@ -33,8 +33,8 @@ def batch_delete(batch, artifact, session, entity_mapping, is_yara=False):
 
 
 def batch_update(batch, artifact, session, include_tags=True):
-    category = dict()
-    fields_to_update = dict()
+    category = {}
+    fields_to_update = {}
     if 'description' in batch and batch['description']:
         fields_to_update['description'] = batch['description']
     if 'expiration_timestamp' in batch and batch['expiration_timestamp'] and hasattr(artifact, 'expiration_timestamp'):

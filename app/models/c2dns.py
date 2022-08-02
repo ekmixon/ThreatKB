@@ -69,14 +69,18 @@ class C2dns(db.Model):
 
     def save_metadata(self, metadata):
         for name, val in metadata.iteritems():
-            val = val if not type(val) == dict else val.get("value", None)
+            val = val if type(val) != dict else val.get("value", None)
             if not val:
                 continue
 
-            m = db.session.query(MetadataMapping).join(Metadata, Metadata.id == MetadataMapping.metadata_id).filter(
-                Metadata.key == name).filter(Metadata.artifact_type == ENTITY_MAPPING["DNS"]).filter(
-                MetadataMapping.artifact_id == self.id).first()
-            if m:
+            if (
+                m := db.session.query(MetadataMapping)
+                .join(Metadata, Metadata.id == MetadataMapping.metadata_id)
+                .filter(Metadata.key == name)
+                .filter(Metadata.artifact_type == ENTITY_MAPPING["DNS"])
+                .filter(MetadataMapping.artifact_id == self.id)
+                .first()
+            ):
                 m.value = val
                 db.session.add(m)
                 dirty = True
@@ -97,12 +101,12 @@ class C2dns(db.Model):
         metas = {}
 
         for meta in db.session.query(Metadata).all():
-            if not meta.artifact_type in metas.keys():
+            if meta.artifact_type not in metas:
                 metas[meta.artifact_type] = {}
             metas[meta.artifact_type][meta.key] = meta
 
         for name, val in metadata.iteritems():
-            val = val if not type(val) == dict else val["value"]
+            val = val if type(val) != dict else val["value"]
 
             if metadata_cache:
                 m = metadata_cache["DNS"].get(artifact.id, {}).get("metadata_values", {}).get(name, None)
@@ -114,13 +118,9 @@ class C2dns(db.Model):
             if m:
                 m.value = val
                 metadata_to_save.append(m)
-            else:
-                m = metas.get(ENTITY_MAPPING["DNS"], {}).get(name, None)
-                # m = db.session.query(Metadata).filter(Metadata.key == name).filter(
-                #    Metadata.artifact_type == ENTITY_MAPPING["DNS"]).first()
-                if m:
-                    metadata_to_save.append(MetadataMapping(value=val, metadata_id=m.id, artifact_id=artifact.id,
-                                                            created_user_id=current_user.id))
+            elif m := metas.get(ENTITY_MAPPING["DNS"], {}).get(name, None):
+                metadata_to_save.append(MetadataMapping(value=val, metadata_id=m.id, artifact_id=artifact.id,
+                                                        created_user_id=current_user.id))
         return metadata_to_save
 
     def to_dict(self, include_metadata=True, include_tags=True, include_comments=True):
@@ -154,7 +154,11 @@ class C2dns(db.Model):
                                     [entity.to_dict() for entity in self.metadata_values]}
             for key in list(set(metadata_keys) - set(metadata_values_dict.keys())):
                 metadata_values_dict[key] = {}
-            d.update(dict(metadata=Metadata.get_metadata_dict("DNS"), metadata_values=metadata_values_dict))
+            d |= dict(
+                metadata=Metadata.get_metadata_dict("DNS"),
+                metadata_values=metadata_values_dict,
+            )
+
 
         return d
 
@@ -213,8 +217,9 @@ def run_against_whitelist(mapper, connect, target):
         states = []
         for s in whitelist_states.split(","):
             if hasattr(cfg_states.Cfg_states, s):
-                result = cfg_states.Cfg_states.query.filter(getattr(cfg_states.Cfg_states, s) > 0).first()
-                if result:
+                if result := cfg_states.Cfg_states.query.filter(
+                    getattr(cfg_states.Cfg_states, s) > 0
+                ).first():
                     states.append(result.state)
 
         if target.state in states:
@@ -288,8 +293,9 @@ def dns_modified(mapper, connection, target):
     session = Session.object_session(target)
 
     if session.is_modified(target, include_collections=False):
-        state_activity_text = activity_log.get_state_change(target, target.domain_name)
-        if state_activity_text:
+        if state_activity_text := activity_log.get_state_change(
+            target, target.domain_name
+        ):
             activity_log.log_activity(connection=connection,
                                       activity_type=ACTIVITY_TYPE.keys()[ACTIVITY_TYPE.keys().index("STATE_TOGGLED")],
                                       activity_text=state_activity_text,
